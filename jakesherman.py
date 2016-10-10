@@ -1,5 +1,5 @@
 import argparse
-import fancyimpute
+# import fancyimpute
 import numpy as np
 import pandas as pd
 from sklearn.cross_validation import train_test_split, cross_val_score
@@ -7,23 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
-import xgboost as xgb
-
-
-def process_arguments():
-    """Process command-line arguments.
-    """
-    parser = argparse.ArgumentParser(
-        description='Creates a submission to the Kaggle Titanic Challenge.')
-    parser.add_argument('--name', action="store", help="""REQUIRED: Name
-        of the .csv file to create (ex. 'submissions/kaggle.csv')""")
-    parser.add_argument('--findhyperparameters', action="store_true",
-                        default=False, help="""Optional (default False): Use grid search to
-        find optimal hyperparameters (true), or use hyperparameters that have
-        previously been optimized (false)?""")
-    arguments = vars(parser.parse_args())
-    assert 'name' in arguments.keys(), 'You must provide a resulting file name!'
-    return arguments
+# import xgboost as xgb
 
 
 def ingest_data():
@@ -161,7 +145,7 @@ def train_test_model(model, hyperparameters, X_train, X_test, y_train, y_test,
         np.append(X_train, X_test, axis=0),
         np.append(y_train, y_test), cv=folds, n_jobs=-1))
 
-    print('Model accuracy ({0}-fold):'.format(str(folds)), kfold_score, '\n')
+    print('Model accuracy ({0}-fold):'.format(str(folds)), kfold_score)
     return optimized_model
 
 
@@ -185,52 +169,52 @@ def majority_vote_ensemble(name, models_votes, train, outcomes, to_predict):
     return None
 
 
-def model_and_submit(train, outcomes, to_predict, name, find_hyperparameters):
-    """
-    Use a random forest classifier to predict which passengers survive the
-    sinking of the Titanic and create a submission.
-    """
-    if find_hyperparameters:
-        X_train, X_test, y_train, y_test = train_test_split(
-            train, outcomes, test_size=0.2, random_state=50)
-        rf_model = train_test_model(
-            RandomForestClassifier(n_estimators=800, random_state=25), {
-                'min_samples_split': [1, 3, 10],
-                'min_samples_leaf': [1, 3, 10],
-                'max_depth': [3, None]},
-            X_train, X_test, y_train, y_test).best_estimator_
-        lr_model = train_test_model(
-            LogisticRegression(random_state=25), {
-                'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
-                'class_weight': [None, 'balanced']},
-            X_train, X_test, y_train, y_test).best_estimator_
-        svm_model = train_test_model(
-            SVC(probability=True, random_state=25), {
-                'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
-                'gamma': np.logspace(-9, 3, 13)},
-            X_train, X_test, y_train, y_test).best_estimator_
-        gbt_model = train_test_model(
-            xgb.XGBClassifier(learning_rate=0.05, n_estimators=200,
-                              seed=25), {
-                'max_depth': range(3, 10, 2),
-                'min_child_weight': range(1, 6, 2),
-                'gamma': [i / 10.0 for i in range(0, 5)],
-                'reg_alpha': [0.001, 0.01, 0.1, 1, 10, 100, 1000]},
-            np.array(X_train), np.array(X_test), y_train,
-            y_test).best_estimator_
-    else:
-        rf_model = RandomForestClassifier(n_estimators=800, random_state=25,
-                                          min_samples_split=3, max_depth=None, min_samples_leaf=1)
-        lr_model = LogisticRegression(random_state=25, C=10,
-                                      class_weight='balanced')
-        svm_model = SVC(probability=True, random_state=25, C=1000,
-                        gamma=0.0001)
-        gbt_model = xgb.XGBClassifier(learning_rate=0.05, n_estimators=200,
-                                      seed=25, reg_alpha=0.01, max_depth=3, gamma=0.1,
-                                      min_child_weight=1)
-    models_votes = [(rf_model, 2), (lr_model, 1), (svm_model, 1), (gbt_model, 1)]
-    majority_vote_ensemble(name, models_votes, train, outcomes, to_predict)
-    return None
+# def model_and_submit(train, outcomes, to_predict, name, find_hyperparameters):
+#     """
+#     Use a random forest classifier to predict which passengers survive the
+#     sinking of the Titanic and create a submission.
+#     """
+#     if find_hyperparameters:
+#         X_train, X_test, y_train, y_test = train_test_split(
+#             train, outcomes, test_size=0.2, random_state=50)
+#         rf_model = train_test_model(
+#             RandomForestClassifier(n_estimators=800, random_state=25), {
+#                 'min_samples_split': [1, 3, 10],
+#                 'min_samples_leaf': [1, 3, 10],
+#                 'max_depth': [3, None]},
+#             X_train, X_test, y_train, y_test).best_estimator_
+#         lr_model = train_test_model(
+#             LogisticRegression(random_state=25), {
+#                 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+#                 'class_weight': [None, 'balanced']},
+#             X_train, X_test, y_train, y_test).best_estimator_
+#         svm_model = train_test_model(
+#             SVC(probability=True, random_state=25), {
+#                 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+#                 'gamma': np.logspace(-9, 3, 13)},
+#             X_train, X_test, y_train, y_test).best_estimator_
+#         gbt_model = train_test_model(
+#             xgb.XGBClassifier(learning_rate=0.05, n_estimators=200,
+#                               seed=25), {
+#                 'max_depth': range(3, 10, 2),
+#                 'min_child_weight': range(1, 6, 2),
+#                 'gamma': [i / 10.0 for i in range(0, 5)],
+#                 'reg_alpha': [0.001, 0.01, 0.1, 1, 10, 100, 1000]},
+#             np.array(X_train), np.array(X_test), y_train,
+#             y_test).best_estimator_
+#     else:
+#         rf_model = RandomForestClassifier(n_estimators=800, random_state=25,
+#                                           min_samples_split=3, max_depth=None, min_samples_leaf=1)
+#         lr_model = LogisticRegression(random_state=25, C=10,
+#                                       class_weight='balanced')
+#         svm_model = SVC(probability=True, random_state=25, C=1000,
+#                         gamma=0.0001)
+#         gbt_model = xgb.XGBClassifier(learning_rate=0.05, n_estimators=200,
+#                                       seed=25, reg_alpha=0.01, max_depth=3, gamma=0.1,
+#                                       min_child_weight=1)
+#     models_votes = [(rf_model, 2), (lr_model, 1), (svm_model, 1), (gbt_model, 1)]
+#     majority_vote_ensemble(name, models_votes, train, outcomes, to_predict)
+#     return None
 
 
 def main():
