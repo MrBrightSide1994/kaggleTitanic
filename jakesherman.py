@@ -1,5 +1,5 @@
 import argparse
-# import fancyimpute
+import fancyimpute.mice as fancyimpute
 import numpy as np
 import pandas as pd
 from sklearn.cross_validation import train_test_split, cross_val_score
@@ -7,14 +7,16 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+
+
 # import xgboost as xgb
 
 
 def ingest_data():
     """Read in, combine the training and test data.
     """
-    train = pd.read_csv('data/train.csv').assign(Train=1)
-    test = (pd.read_csv('data/test.csv').assign(Train=0)
+    train = pd.read_csv('src/train.csv').assign(Train=1)
+    test = (pd.read_csv('src/test.csv').assign(Train=0)
             .assign(Survived=-999)[list(train)])
     return pd.concat([train, test])
 
@@ -221,8 +223,9 @@ def main():
     data = ingest_data()
     data = feature_engineering(data)
     train, outcomes, to_predict = split_data(data)
-    model_and_submit(train, outcomes, to_predict, name='Output_titanic',
-                     find_hyperparameters=True)
+    print(train)
+    # model_and_submit(train, outcomes, to_predict, name='Output_titanic',
+    #                  find_hyperparameters=True)
 
 
 if __name__ == '__main__':
