@@ -52,6 +52,22 @@ def ticket_counts(data):
     return data.drop(['TicketCount'], axis=1)
 
 
+def populate_deck_na(data):
+    for column in data.columns.values:
+        if 'Deck' in column:
+            data[column] = data[column].fillna(0)
+
+    return data
+
+
+def populate_embarked_na(data):
+    for column in data.columns.values:
+        if 'Embarked' in column:
+            data[column] = data[column].fillna(0)
+
+    return data
+
+
 def create_dummy_nans(data, col_name):
     """Create dummies for a column in a DataFrame, and preserve np.nans in their
     original places instead of in a separate _nan column.
@@ -110,6 +126,8 @@ def feature_engineering(data):
             # Drop columns we don't need
             .drop(['Name', 'Cabin', 'PassengerId', 'SibSp', 'Parch', 'LastName'],
                   axis=1)
+            .pipe(populate_deck_na)
+            .pipe(populate_embarked_na)
 
             # Impute NAs using MICE
             # .pipe(impute)
@@ -230,9 +248,9 @@ def main():
     data = feature_engineering(data)
 
     print(data)
-    # train, outcomes, to_predict = split_data(data)
-    # model_and_submit(train, outcomes, to_predict, name='Output_titanic',
-    #                  find_hyperparameters=True)
+    train, outcomes, to_predict = split_data(data)
+    model_and_submit(train, outcomes, to_predict, output_file_name='Output_titanic',
+                     find_hyperparameters=True)
 
 
 if __name__ == '__main__':
