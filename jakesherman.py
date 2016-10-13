@@ -2,11 +2,13 @@ import argparse
 import fancyimpute.mice as fancyimpute
 import numpy as np
 import pandas as pd
+
 from sklearn.cross_validation import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from sklearn.ensemble import GradientBoostingClassifier
 
 
 # import xgboost as xgb
@@ -201,6 +203,13 @@ def model_and_submit(train, outcomes, to_predict, output_file_name, find_hyperpa
         X_train, X_test, y_train, y_test = train_test_split(
             train, outcomes, test_size=0.2, random_state=50)
 
+        gb_model = train_test_model(
+            GradientBoostingClassifier(n_estimators=800, random_state=25), {
+                'min_samples_split': [1, 3, 10],
+                'min_samples_leaf': [1, 3, 10],
+                'max_depth': [3, None]},
+            X_train, X_test, y_train, y_test).best_estimator_
+
         rf_model = train_test_model(
             RandomForestClassifier(n_estimators=800, random_state=25), {
                 'min_samples_split': [1, 3, 10],
@@ -224,13 +233,16 @@ def model_and_submit(train, outcomes, to_predict, output_file_name, find_hyperpa
         rf_model = RandomForestClassifier(n_estimators=800, random_state=25,
                                           min_samples_split=3, max_depth=None, min_samples_leaf=1)
 
+        gb_model = GradientBoostingClassifier(n_estimators=200, learning_rate=0.05, max_depth=3,
+                                              min_samples_leaf=1)
+
         lr_model = LogisticRegression(random_state=25, C=10,
                                       class_weight='balanced')
 
         svm_model = SVC(probability=True, random_state=25, C=1000,
                         gamma=0.0001)
 
-    models_votes = [(rf_model, 2), (lr_model, 1), (svm_model, 1)]
+    models_votes = [(rf_model, 2), (lr_model, 1), (svm_model, 1), (gb_model, 1)]
     majority_vote_ensemble(output_file_name, models_votes, train, outcomes, to_predict)
     return None
 
