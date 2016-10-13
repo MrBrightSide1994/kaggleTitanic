@@ -52,18 +52,11 @@ def ticket_counts(data):
     return data.drop(['TicketCount'], axis=1)
 
 
-def populate_deck_na(data):
-    for column in data.columns.values:
-        if 'Deck' in column:
-            data[column] = data[column].fillna(0)
-
-    return data
-
-
-def populate_embarked_na(data):
-    for column in data.columns.values:
-        if 'Embarked' in column:
-            data[column] = data[column].fillna(0)
+def create_alone_right_place_feature(data):
+    data = data.assign(
+        AloneRightPlace=np.where((data['FamSize'] == 1) & (data['Sex'] == 0) & (data['Pclass_3'] == 1), 10, 0))
+    data['AloneRightPlace'] = data['AloneRightPlace'] + np.where(
+        (data['FamSize'] > 1) & (data['Sex'] == 1) & (data['Pclass_2'] == 1), 10, 0)
 
     return data
 
@@ -126,11 +119,10 @@ def feature_engineering(data):
             # Drop columns we don't need
             .drop(['Name', 'Cabin', 'PassengerId', 'SibSp', 'Parch', 'LastName'],
                   axis=1)
-            .pipe(populate_deck_na)
-            .pipe(populate_embarked_na)
+            # .pipe(create_alone_right_place_feature)
 
             # Impute NAs using MICE
-            # .pipe(impute)
+            .pipe(impute)
             )
 
 
@@ -250,7 +242,7 @@ def main():
     print(data)
     train, outcomes, to_predict = split_data(data)
     model_and_submit(train, outcomes, to_predict, output_file_name='Output_titanic',
-                     find_hyperparameters=True)
+                     find_hyperparameters=False)
 
 
 if __name__ == '__main__':
