@@ -8,11 +8,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing.imputation import Imputer
 
 
 # import xgboost as xgb
-
 
 def ingest_data():
     """Read in, combine the training and test data.
@@ -80,7 +80,10 @@ def impute(data):
 
     impute_missing = data.drop(['Survived', 'Train'], axis=1)
     impute_missing_cols = list(impute_missing)
+
+    # filled_soft = Imputer().fit_transform(impute_missing)
     filled_soft = fancyimpute.MICE().complete(np.array(impute_missing))
+
     results = pd.DataFrame(filled_soft, columns=impute_missing_cols)
     results['Train'] = list(data['Train'])
     results['Survived'] = list(data['Survived'])
@@ -143,16 +146,17 @@ def split_data(data):
     return train, outcomes, to_predict
 
 
-def train_test_model(model, hyperparameters, X_train, X_test, y_train, y_test,
+def train_test_model(model, hyperparameters, X_train, X_test, y_train, y_test, model_name,
                      folds=5):
     """
     Given a [model] and a set of possible [hyperparameters], along with
     matricies corresponding to hold-out cross-validation, returns a model w/
     optimized hyperparameters, and prints out model evaluation metrics.
     """
+    print('Omptimizing parameters for {0}:'.format(model_name))
 
     optimized_model = GridSearchCV(model, hyperparameters, cv=folds,
-                                   n_jobs=-1)
+                                   n_jobs=-1, verbose=3)
     optimized_model.fit(X_train, y_train)
     optimized_model.predict(X_test)
 
@@ -164,7 +168,7 @@ def train_test_model(model, hyperparameters, X_train, X_test, y_train, y_test,
         np.append(X_train, X_test, axis=0),
         np.append(y_train, y_test), cv=folds, n_jobs=-1))
 
-    print('Model accuracy ({0}-fold):'.format(str(folds)), kfold_score)
+    print('{1} accuracy ({0}-fold):'.format(str(folds), model_name), kfold_score)
     return optimized_model
 
 
@@ -203,46 +207,65 @@ def model_and_submit(train, outcomes, to_predict, output_file_name, find_hyperpa
         X_train, X_test, y_train, y_test = train_test_split(
             train, outcomes, test_size=0.2, random_state=50)
 
-        gb_model = train_test_model(
-            GradientBoostingClassifier(n_estimators=800, random_state=25), {
-                'min_samples_split': [1, 3, 10],
-                'min_samples_leaf': [1, 3, 10],
-                'max_depth': [3, None]},
-            X_train, X_test, y_train, y_test).best_estimator_
+        # mlp_model = train_test_model(
+        #     MLPClassifier(solver='lbfgs',
+        #                   learning_rate='adaptive',
+        #                   random_state=25), {
+        #         'hidden_layer_sizes': [(100,), (300,), (500,)],
+        #         'alpha': [0.001, 0.03, 0.05],
+        #         'max_iter': [200, 300, 400]},
+        #     X_train, X_test, y_train, y_test, "MLPClassifier").best_estimator_
 
-        rf_model = train_test_model(
-            RandomForestClassifier(n_estimators=800, random_state=25), {
+        rf_model_gini = train_test_model(
+            RandomForestClassifier(n_jobs=-1, n_estimators=1200,
+                                   random_state=25,
+                                   criterion='gini'), {
                 'min_samples_split': [1, 3, 10],
                 'min_samples_leaf': [1, 3, 10],
                 'max_depth': [3, None]},
-            X_train, X_test, y_train, y_test).best_estimator_
+            X_train, X_test, y_train, y_test, "RandomForestClassifier_gini").best_estimator_
+
+        rf_model_entropy = train_test_model(
+            RandomForestClassifier(n_jobs=-1, n_estimators=1200,
+                                   random_state=50,
+                                   criterion='entropy'), {
+                'min_samples_split': [1, 3, 10],
+                'min_samples_leaf': [1, 3, 10],
+                'max_depth': [3, None]},
+            X_train, X_test, y_train, y_test, "RandomForestClassifier_entropy").best_estimator_
 
         lr_model = train_test_model(
             LogisticRegression(random_state=25), {
                 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                 'class_weight': [None, 'balanced']},
-            X_train, X_test, y_train, y_test).best_estimator_
+            X_train, X_test, y_train, y_test, "LogisticRegression").best_estimator_
 
         svm_model = train_test_model(
             SVC(probability=True, random_state=25), {
                 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                 'gamma': np.logspace(-9, 3, 13)},
-            X_train, X_test, y_train, y_test).best_estimator_
+            X_train, X_test, y_train, y_test, "SVC").best_estimator_
 
     else:
-        rf_model = RandomForestClassifier(n_estimators=800, random_state=25,
-                                          min_samples_split=3, max_depth=None, min_samples_leaf=1)
+        rf_model_gini = RandomForestClassifier(n_jobs=-1, criterion='gini', n_estimators=1200, random_state=25,
+                                               min_samples_split=10, max_depth=None, min_samples_leaf=1)
 
-        gb_model = GradientBoostingClassifier(n_estimators=200, learning_rate=0.05, max_depth=3,
-                                              min_samples_leaf=1)
+        rf_model_entropy = RandomForestClassifier(n_jobs=-1, criterion='entropy', n_estimators=1200, random_state=50,
+                                                  min_samples_split=10, max_depth=None, min_samples_leaf=1)
+
+        mlp_model_lbfgs = MLPClassifier(solver='lbfgs',
+                                        learning_rate='adaptive',
+                                        random_state=25,
+                                        alpha=0.03, max_iter=400)
 
         lr_model = LogisticRegression(random_state=25, C=10,
-                                      class_weight='balanced')
+                                      class_weight=None)
 
         svm_model = SVC(probability=True, random_state=25, C=1000,
                         gamma=0.0001)
 
-    models_votes = [(rf_model, 2), (lr_model, 1), (svm_model, 1), (gb_model, 1)]
+    models_votes = [(rf_model_entropy, 1), (rf_model_gini, 1), (lr_model, 1), (svm_model, 1),
+                    (mlp_model_lbfgs, 1)]  # change to XGB model
     majority_vote_ensemble(output_file_name, models_votes, train, outcomes, to_predict)
     return None
 
