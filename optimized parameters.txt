@@ -1,0 +1,15 @@
+MLPClassifier
+Optimized parameters: {'hidden_layer_sizes': (300,), 'alpha': 0.001, 'max_iter': 200}
+
+RandomForestClassifier_gini
+Optimized parameters: {'min_samples_split': 1, 'max_depth': None, 'min_samples_leaf': 1}
+
+Omptimizing parameters for ExtraTreesClassifier:
+Optimized parameters: {'min_samples_split': 3, 'max_depth': None, 'min_samples_leaf': 1, 'n_estimators': 800}
+
+LogisticRegression
+Optimized parameters: {'class_weight': None, 'C': 100}
+
+SVC
+Optimized parameters: {'C': 1000, 'gamma': 0.0001}
+
