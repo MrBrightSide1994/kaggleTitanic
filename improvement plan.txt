@@ -1,0 +1,7 @@
+1) Mice regression model tuning
+2) Optimization model tuning - GridSearch
+3) Voting ensemble tuning - model level
+4) Voting ensemble tuning - file level
+5) Expand the ensemble - try to add deep nn
+6) Refactoring
+7) Integrade and optimize XGB
