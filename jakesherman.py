@@ -2,6 +2,7 @@ import argparse
 import fancyimpute.mice as fancyimpute
 import numpy as np
 import pandas as pd
+import os
 
 from sklearn.cross_validation import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestClassifier
@@ -9,7 +10,10 @@ from sklearn.ensemble import VotingClassifier
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing.imputation import Imputer
+
+from titanic_classifier import SurvivalClassifier
 
 import xgboost as xgb
 
@@ -282,5 +286,103 @@ def main():
                      find_hyperparameters=False)
 
 
+def pre_process_data(train_x_file_name, train_y_file_name, test_x_file_name):
+    data = ingest_data()
+    data = feature_engineering(data)
+
+    print(data)
+
+    train_x, train_y, test_x = split_data(data)
+
+    train_x.to_csv(train_x_file_name, index=False)
+    pd.DataFrame(train_y).to_csv(train_y_file_name, index=False)
+    test_x.to_csv(test_x_file_name, index=False)
+
+
+def custom_classifier():
+    temp_train_x = 'temp/train_x'
+    temp_train_y = 'temp/train_y'
+    temp_test_x = 'temp/test_x'
+
+    if not (os.path.isfile(temp_train_x) & os.path.isfile(temp_train_y) & os.path.isfile(temp_test_x)):
+        pre_process_data(temp_train_x, temp_train_y, temp_test_x)
+
+    train_x = pd.read_csv(temp_train_x)
+    train_y = pd.read_csv(temp_train_y).T.values[0]
+    test_x = pd.read_csv(temp_test_x)
+
+    titanic_classifier = SurvivalClassifier(train_x, train_y, test_x, verbose=3)
+
+    titanic_classifier.append_model(
+        LogisticRegression(random_state=25, n_jobs=1, C=1000, class_weight=None, max_iter=100, solver='liblinear'),
+        'Logistic Regression',
+        {
+            'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000, 1200],
+            'class_weight': [None, 'balanced'],
+            'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag'],
+            'max_iter': [50, 100, 300, 400, 500]
+        }
+    )
+
+    titanic_classifier.append_model(
+        RandomForestClassifier(random_state=50, n_jobs=-1, max_depth=None, criterion='gini', min_samples_leaf=1,
+                               min_samples_split=3, n_estimators=800, class_weight=None),
+        'Random Forest Classifier',
+        {
+            'n_estimators': [600, 800, 1200],
+            'min_samples_split': [1, 3, 10, 50],
+            'min_samples_leaf': [1, 3, 10, 50],
+            'max_depth': [3, None],
+            'criterion': ['gini', 'entropy'],
+            'class_weight': ['balanced', None]
+        }
+    )
+
+    titanic_classifier.append_model(
+        xgb.XGBClassifier(gamma=0.0, learning_rate=0.01, n_estimators=200,
+                          reg_alpha=0.001, subsample=1, max_depth=6,
+                          min_child_weight=1, seed=25),
+        'Extreme Gradient Boost Classifier',
+        {
+            'learning_rate': [0.01, 0.05, 0.1, 0.3],
+            'max_depth': [3, 6, 10],
+            'min_child_weight': [1, 6, 2],
+            'gamma': [i / 10.0 for i in range(0, 3)],
+            'reg_alpha': [0.001, 0.01, 0.1, 1],
+            'subsample': [0.5, 1]
+        }
+    )
+
+    # titanic_classifier.append_model( performs poorly
+    #     MLPClassifier(random_state=25, max_iter=1000,
+    #                   alpha=0.01, activation='tanh',
+    #                   tol=0.01, solver='lbfgs'),
+    #     'Multi Layer Perceptron',
+    #     {
+    #         'activation': ['relu', 'tanh'],
+    #         'solver': ['lbfgs', 'adam'],
+    #         'alpha': [0.0001, 0.003, 0.01],
+    #         'max_iter': [200, 400, 600],
+    #         'tol': [0.0001, 0.003, 0.01]
+    #     }
+    # )
+
+    # titanic_classifier.append_model(
+    #     SVC(probability=True, random_state=25, C=1000, gamma=0.0001, tol=0.0001),
+    #     'SVC',
+    #     {
+    #         'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+    #         'gamma': np.logspace(-9, 3, 13),
+    #         'tol': [0.0001, 0.003, 0.01]
+    #     }
+    # )
+
+    titanic_classifier.optimize_models()
+
+    # titanic_classifier.accuracy_report(folds=3)
+
+    titanic_classifier.learn_predict_flush('output.csv', 'data/test.csv', voting='soft', weights=[1, 2, 1])
+
+
 if __name__ == '__main__':
-    main()
+    custom_classifier()
