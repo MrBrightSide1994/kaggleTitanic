@@ -1,4 +1,3 @@
-import argparse
 import fancyimpute.mice as fancyimpute
 import numpy as np
 import pandas as pd
@@ -337,23 +336,23 @@ def custom_classifier():
             'class_weight': ['balanced', None]
         }
     )
-
-    titanic_classifier.append_model(
-        xgb.XGBClassifier(gamma=0.0, learning_rate=0.01, n_estimators=200,
-                          reg_alpha=0.001, subsample=1, max_depth=6,
-                          min_child_weight=1, seed=25),
-        'Extreme Gradient Boost Classifier',
-        {
-            'learning_rate': [0.01, 0.05, 0.1, 0.3],
-            'max_depth': [3, 6, 10],
-            'min_child_weight': [1, 6, 2],
-            'gamma': [i / 10.0 for i in range(0, 3)],
-            'reg_alpha': [0.001, 0.01, 0.1, 1],
-            'subsample': [0.5, 1]
-        }
-    )
-
-    # titanic_classifier.append_model( performs poorly
+    #
+    # titanic_classifier.append_model(
+    #     xgb.XGBClassifier(gamma=0.0, learning_rate=0.01, n_estimators=200,
+    #                       reg_alpha=0.001, subsample=1, max_depth=6,
+    #                       min_child_weight=1, seed=25),
+    #     'Extreme Gradient Boost Classifier',
+    #     {
+    #         'learning_rate': [0.01, 0.05, 0.1, 0.3],
+    #         'max_depth': [3, 6, 10],
+    #         'min_child_weight': [1, 6, 2],
+    #         'gamma': [i / 10.0 for i in range(0, 3)],
+    #         'reg_alpha': [0.001, 0.01, 0.1, 1],
+    #         'subsample': [0.5, 1]
+    #     }
+    # )
+    #
+    # titanic_classifier.append_model(
     #     MLPClassifier(random_state=25, max_iter=1000,
     #                   alpha=0.01, activation='tanh',
     #                   tol=0.01, solver='lbfgs'),
@@ -366,7 +365,7 @@ def custom_classifier():
     #         'tol': [0.0001, 0.003, 0.01]
     #     }
     # )
-
+    #
     # titanic_classifier.append_model(
     #     SVC(probability=True, random_state=25, C=1000, gamma=0.0001, tol=0.0001),
     #     'SVC',
@@ -377,8 +376,8 @@ def custom_classifier():
     #     }
     # )
 
-    titanic_classifier.optimize_models()
-
+    # titanic_classifier.optimize_models()
+    titanic_classifier.plot_learning_curves()
     # titanic_classifier.accuracy_report(folds=3)
 
     titanic_classifier.learn_predict_flush('output.csv', 'data/test.csv', voting='soft', weights=[1, 2, 1])

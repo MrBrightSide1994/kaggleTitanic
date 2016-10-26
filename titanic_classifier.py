@@ -1,9 +1,10 @@
-from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV, learning_curve, ShuffleSplit
 from sklearn.ensemble import VotingClassifier
 
 import pandas as pd
 import numpy as np
 import datetime
+import matplotlib.pyplot as plt
 
 
 class SurvivalClassifier:
@@ -55,6 +56,42 @@ class SurvivalClassifier:
             report_file.write('{0} optimized parameters: {1}'.format(model_name, optimized_model.best_params_))
 
         report_file.close()
+
+        return None
+
+    def plot_learning_curves(self, folds=5):
+        for index, model in enumerate(self.models):
+            model_name = self.model_names[index]
+
+            plt.figure()
+            plt.title(model_name)
+            plt.xlabel("Training examples")
+            plt.ylabel("Score")
+
+            cv = ShuffleSplit(n_splits=10, test_size=0.2, random_state=13)
+
+            train_sizes, train_scores, test_scores = learning_curve(
+                model, self.train_x, self.train_y, n_jobs=-1, cv=cv)
+
+            train_scores_mean = np.mean(train_scores, axis=1)
+            train_scores_std = np.std(train_scores, axis=1)
+            test_scores_mean = np.mean(test_scores, axis=1)
+            test_scores_std = np.std(test_scores, axis=1)
+
+            plt.grid()
+            plt.fill_between(train_sizes, train_scores_mean - train_scores_std,
+                             train_scores_mean + train_scores_std, alpha=0.1,
+                             color="r")
+            plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
+                             test_scores_mean + test_scores_std, alpha=0.1, color="g")
+            plt.plot(train_sizes, train_scores_mean, 'o-', color="r",
+                     label="Training score")
+            plt.plot(train_sizes, test_scores_mean, 'o-', color="g",
+                     label="Cross-validation score")
+
+            plt.legend(loc="best")
+
+        plt.show()
 
         return None
 
