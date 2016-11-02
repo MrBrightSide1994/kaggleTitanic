@@ -1,5 +1,6 @@
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV, learning_curve, ShuffleSplit
 from sklearn.ensemble import VotingClassifier
+from sklearn.feature_selection import RFE
 
 import pandas as pd
 import numpy as np
@@ -114,12 +115,27 @@ class SurvivalClassifier:
 
         return None
 
-    def learn_predict_flush(self, output_file_name, test_file_name, voting='hard', weights=None):
+    def feature_selection(self):
+        for index, model in enumerate(self.models):
+            model_name = self.model_names[index]
+
+            classifier = model
+            random_feature_elimination = RFE(classifier)
+            random_feature_elimination = random_feature_elimination.fit(self.train_x, self.train_y)
+
+            print('Selected Features for model: {0}'.format(model_name))
+            print(self.train_x.ix[:, np.where(random_feature_elimination.support_)[0]].columns.values)
+
+    def get_classifier(self, voting='hard', weights=None):
         model_with_name = []
         for index, model in enumerate(self.models):
             model_with_name.append(tuple([self.model_names[index], model]))
 
         voting_classifier = VotingClassifier(estimators=model_with_name, voting=voting, weights=weights)
+        return voting_classifier
+
+    def learn_predict_flush(self, output_file_name, test_file_name, voting='hard', weights=None):
+        voting_classifier = self.get_classifier(voting=voting, weights=weights)
         voting_classifier = voting_classifier.fit(self.train_x, self.train_y)
 
         ensemble = pd.read_csv(test_file_name)[['PassengerId']].assign(

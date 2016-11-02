@@ -312,16 +312,16 @@ def custom_classifier():
 
     titanic_classifier = SurvivalClassifier(train_x, train_y, test_x, verbose=3)
 
-    titanic_classifier.append_model(
-        LogisticRegression(random_state=25, n_jobs=1, C=1000, class_weight=None, max_iter=100, solver='liblinear'),
-        'Logistic Regression',
-        {
-            'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000, 1200],
-            'class_weight': [None, 'balanced'],
-            'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag'],
-            'max_iter': [50, 100, 300, 400, 500]
-        }
-    )
+    # titanic_classifier.append_model(
+    #     LogisticRegression(random_state=25, n_jobs=1, C=1000, class_weight=None, max_iter=100, solver='liblinear'),
+    #     'Logistic Regression',
+    #     {
+    #         'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000, 1200],
+    #         'class_weight': [None, 'balanced'],
+    #         'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag'],
+    #         'max_iter': [50, 100, 300, 400, 500]
+    #     }
+    # )
 
     titanic_classifier.append_model(
         RandomForestClassifier(random_state=50, n_jobs=-1, max_depth=None, criterion='gini', min_samples_leaf=1,
@@ -336,7 +336,7 @@ def custom_classifier():
             'class_weight': ['balanced', None]
         }
     )
-    #
+
     # titanic_classifier.append_model(
     #     xgb.XGBClassifier(gamma=0.0, learning_rate=0.01, n_estimators=200,
     #                       reg_alpha=0.001, subsample=1, max_depth=6,
@@ -377,10 +377,11 @@ def custom_classifier():
     # )
 
     # titanic_classifier.optimize_models()
-    titanic_classifier.plot_learning_curves()
+    # titanic_classifier.plot_learning_curves()
     # titanic_classifier.accuracy_report(folds=3)
 
-    titanic_classifier.learn_predict_flush('output.csv', 'data/test.csv', voting='soft', weights=[1, 2, 1])
+    titanic_classifier.feature_selection()
+    # titanic_classifier.learn_predict_flush('output.csv', 'data/test.csv', voting='soft', weights=[1, 2, 1])
 
 
 if __name__ == '__main__':
