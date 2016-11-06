@@ -4,8 +4,7 @@ import pandas as pd
 import os
 
 from sklearn.cross_validation import train_test_split, cross_val_score
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import VotingClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, VotingClassifier, GradientBoostingClassifier
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -312,19 +311,19 @@ def custom_classifier():
 
     titanic_classifier = SurvivalClassifier(train_x, train_y, test_x, verbose=3)
 
-    # titanic_classifier.append_model(
-    #     LogisticRegression(random_state=25, n_jobs=1, C=1000, class_weight=None, max_iter=100, solver='liblinear'),
-    #     'Logistic Regression',
-    #     {
-    #         'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000, 1200],
-    #         'class_weight': [None, 'balanced'],
-    #         'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag'],
-    #         'max_iter': [50, 100, 300, 400, 500]
-    #     }
-    # )
+    titanic_classifier.append_model(
+        LogisticRegression(random_state=33, n_jobs=1, C=1000, class_weight=None, max_iter=100, solver='liblinear'),
+        'Logistic Regression',
+        {
+            'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000, 1200],
+            'class_weight': [None, 'balanced'],
+            'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag'],
+            'max_iter': [50, 100, 300, 400, 500]
+        }
+    )
 
     titanic_classifier.append_model(
-        RandomForestClassifier(random_state=50, n_jobs=-1, max_depth=None, criterion='gini', min_samples_leaf=1,
+        RandomForestClassifier(random_state=75, n_jobs=-1, max_depth=None, criterion='gini', min_samples_leaf=1,
                                min_samples_split=3, n_estimators=800, class_weight=None),
         'Random Forest Classifier',
         {
@@ -337,51 +336,68 @@ def custom_classifier():
         }
     )
 
-    # titanic_classifier.append_model(
-    #     xgb.XGBClassifier(gamma=0.0, learning_rate=0.01, n_estimators=200,
-    #                       reg_alpha=0.001, subsample=1, max_depth=6,
-    #                       min_child_weight=1, seed=25),
-    #     'Extreme Gradient Boost Classifier',
-    #     {
-    #         'learning_rate': [0.01, 0.05, 0.1, 0.3],
-    #         'max_depth': [3, 6, 10],
-    #         'min_child_weight': [1, 6, 2],
-    #         'gamma': [i / 10.0 for i in range(0, 3)],
-    #         'reg_alpha': [0.001, 0.01, 0.1, 1],
-    #         'subsample': [0.5, 1]
-    #     }
-    # )
-    #
-    # titanic_classifier.append_model(
-    #     MLPClassifier(random_state=25, max_iter=1000,
-    #                   alpha=0.01, activation='tanh',
-    #                   tol=0.01, solver='lbfgs'),
-    #     'Multi Layer Perceptron',
-    #     {
-    #         'activation': ['relu', 'tanh'],
-    #         'solver': ['lbfgs', 'adam'],
-    #         'alpha': [0.0001, 0.003, 0.01],
-    #         'max_iter': [200, 400, 600],
-    #         'tol': [0.0001, 0.003, 0.01]
-    #     }
-    # )
-    #
-    # titanic_classifier.append_model(
-    #     SVC(probability=True, random_state=25, C=1000, gamma=0.0001, tol=0.0001),
-    #     'SVC',
-    #     {
-    #         'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
-    #         'gamma': np.logspace(-9, 3, 13),
-    #         'tol': [0.0001, 0.003, 0.01]
-    #     }
-    # )
+    titanic_classifier.append_model(
+        RandomForestClassifier(random_state=50, n_jobs=-1, max_depth=None, criterion='entropy', min_samples_leaf=1,
+                               min_samples_split=3, n_estimators=800, class_weight=None),
+        'Random Forest Classifier Entropy',
+        {
+            'n_estimators': [600, 800, 1200],
+            'min_samples_split': [1, 3, 10, 50],
+            'min_samples_leaf': [1, 3, 10, 50],
+            'max_depth': [3, None],
+            'criterion': ['gini', 'entropy'],
+            'class_weight': ['balanced', None]
+        }
+    )
+
+    titanic_classifier.append_model(
+        xgb.XGBClassifier(gamma=0.0, learning_rate=0.01, n_estimators=200,
+                          reg_alpha=0.001, subsample=1, max_depth=6,
+                          min_child_weight=1, seed=25),
+        'Extreme Gradient Boost Classifier',
+        {
+            'learning_rate': [0.01, 0.05, 0.1, 0.3],
+            'max_depth': [3, 6, 10],
+            'min_child_weight': [1, 6, 2],
+            'gamma': [i / 10.0 for i in range(0, 3)],
+            'reg_alpha': [0.001, 0.01, 0.1, 1],
+            'subsample': [0.5, 1]
+        }
+    )
+
+    titanic_classifier.append_model(
+        MLPClassifier(random_state=77, hidden_layer_sizes=500, max_iter=1000,
+                      alpha=0.01, activation='tanh',
+                      tol=0.01, solver='lbfgs'),
+        'Multi Layer Perceptron',
+        {
+            'hidden_layer_sizes': [(100,), (300,), (500,)],
+            'activation': ['relu', 'tanh'],
+            'alpha': [0.0001, 0.003, 0.01],
+            'max_iter': [200, 400, 600],
+            'tol': [0.0001, 0.003, 0.01]
+        }
+    )
+
+    titanic_classifier.append_model(
+        SVC(probability=True, random_state=12, C=1000, gamma=0.0001, tol=0.0001),
+        'SVC',
+        {
+            'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+            'gamma': np.logspace(-9, 3, 13),
+            'tol': [0.0001, 0.003, 0.01]
+        }
+    )
 
     # titanic_classifier.optimize_models()
     # titanic_classifier.plot_learning_curves()
     # titanic_classifier.accuracy_report(folds=3)
+    # titanic_classifier.blend_logistic_regression()
+    titanic_classifier.stacking()
+    titanic_classifier.flush_result('output_stacking.csv', 'data/test.csv')
 
-    titanic_classifier.feature_selection()
-    # titanic_classifier.learn_predict_flush('output.csv', 'data/test.csv', voting='soft', weights=[1, 2, 1])
+    # titanic_classifier.feature_selection()
+    # titanic_classifier.learn_predict_flush('output.csv', 'data/test.csv', weights=[2, 1, 1])
 
 
 if __name__ == '__main__':

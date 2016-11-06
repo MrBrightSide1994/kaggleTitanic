@@ -1,6 +1,8 @@
-from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV, learning_curve, ShuffleSplit
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV, learning_curve, ShuffleSplit, \
+    StratifiedKFold
 from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import RFE
+from sklearn.neural_network import MLPClassifier
 
 import pandas as pd
 import numpy as np
@@ -17,6 +19,7 @@ class SurvivalClassifier:
         self.train_y = train_y
         self.test_x = test_x
         self.verbose = verbose
+        self.result = []
 
     def append_model(self, model, model_name=None, hyper_parameters=None):
         self.models.append(model)
@@ -133,6 +136,73 @@ class SurvivalClassifier:
 
         voting_classifier = VotingClassifier(estimators=model_with_name, voting=voting, weights=weights)
         return voting_classifier
+
+    def blending(self, n_folds=10):
+        input_train_x = np.array(self.train_x)
+        input_train_y = self.train_y
+        input_test_x = np.array(self.test_x)
+
+        skf = StratifiedKFold(n_splits=n_folds)
+
+        data_set_blend_train = np.zeros((input_train_x.shape[0], len(self.models)))
+        data_set_blend_test = np.zeros((input_test_x.shape[0], len(self.models)))
+
+        for j, model in enumerate(self.models):
+            data_set_blend_test_j = np.zeros((input_test_x.shape[0], n_folds))
+
+            for i, (train, test) in enumerate(skf.split(input_train_x, input_train_y)):
+                x_train = input_train_x[train]
+                y_train = input_train_y[train]
+
+                x_test = input_train_x[test]
+                # y_test = input_train_y[test]
+
+                model.fit(x_train, y_train)
+
+                data_set_blend_train[test, j] = model.predict_proba(x_test)[:, 1]
+                data_set_blend_test_j[:, i] = model.predict_proba(input_test_x)[:, 1]
+
+            data_set_blend_test[:, j] = data_set_blend_test_j.mean(1)
+
+        blender = MLPClassifier(hidden_layer_sizes=300)
+        blender.fit(data_set_blend_train, input_train_y)
+
+        y_prediction = blender.predict(data_set_blend_test)
+        # y_prediction = (y_prediction - y_prediction.min()) / (y_prediction.max() - y_prediction.min())
+
+        self.result = y_prediction
+
+        return None
+
+    def stacking(self):
+        input_train_x = np.array(self.train_x)
+        input_train_y = self.train_y
+        input_test_x = np.array(self.test_x)
+
+        x_train_a, x_train_b, y_train_a, y_train_b = train_test_split(
+            input_train_x, input_train_y, test_size=0.5, random_state=50)
+
+        data_set_stack_train = np.zeros((x_train_b.shape[0], len(self.models)))
+        data_set_stack_test = np.zeros((input_test_x.shape[0], len(self.models)))
+
+        for index, model in enumerate(self.models):
+            self.log('Stacking model: {0}'.format(self.model_names[index]), 1)
+
+            model.fit(x_train_a, y_train_a)
+            data_set_stack_train[:, index] = model.predict_proba(x_train_b)[:, 1]
+            data_set_stack_test[:, index] = model.predict_proba(input_test_x)[:, 1]
+
+        blender  = MLPClassifier(hidden_layer_sizes=300)
+        blender.fit(data_set_stack_train, y_train_b)
+
+        self.result = blender.predict(data_set_stack_test)
+
+        return None
+
+    def flush_result(self, output_file_name, test_file_name):
+        ensemble = pd.read_csv(test_file_name)[['PassengerId']].assign(
+            Survived=self.result)
+        ensemble.to_csv(output_file_name, index=False)
 
     def learn_predict_flush(self, output_file_name, test_file_name, voting='hard', weights=None):
         voting_classifier = self.get_classifier(voting=voting, weights=weights)
