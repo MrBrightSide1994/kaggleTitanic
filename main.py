@@ -365,36 +365,36 @@ def custom_classifier():
         }
     )
 
-    titanic_classifier.append_model(
-        MLPClassifier(random_state=77, hidden_layer_sizes=500, max_iter=1000,
-                      alpha=0.01, activation='tanh',
-                      tol=0.01, solver='lbfgs'),
-        'Multi Layer Perceptron',
-        {
-            'hidden_layer_sizes': [(100,), (300,), (500,)],
-            'activation': ['relu', 'tanh'],
-            'alpha': [0.0001, 0.003, 0.01],
-            'max_iter': [200, 400, 600],
-            'tol': [0.0001, 0.003, 0.01]
-        }
-    )
-
-    titanic_classifier.append_model(
-        SVC(probability=True, random_state=12, C=1000, gamma=0.0001, tol=0.0001),
-        'SVC',
-        {
-            'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
-            'gamma': np.logspace(-9, 3, 13),
-            'tol': [0.0001, 0.003, 0.01]
-        }
-    )
+    # titanic_classifier.append_model(
+    #     MLPClassifier(random_state=77, hidden_layer_sizes=500, max_iter=1000,
+    #                   alpha=0.01, activation='tanh',
+    #                   tol=0.01, solver='lbfgs'),
+    #     'Multi Layer Perceptron',
+    #     {
+    #         'hidden_layer_sizes': [(100,), (300,), (500,)],
+    #         'activation': ['relu', 'tanh'],
+    #         'alpha': [0.0001, 0.003, 0.01],
+    #         'max_iter': [200, 400, 600],
+    #         'tol': [0.0001, 0.003, 0.01]
+    #     }
+    # )
+    #
+    # titanic_classifier.append_model(
+    #     SVC(probability=True, random_state=12, C=1000, gamma=0.0001, tol=0.0001),
+    #     'SVC',
+    #     {
+    #         'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+    #         'gamma': np.logspace(-9, 3, 13),
+    #         'tol': [0.0001, 0.003, 0.01]
+    #     }
+    # )
 
     # titanic_classifier.optimize_models()
     # titanic_classifier.plot_learning_curves()
     # titanic_classifier.accuracy_report(folds=3)
     # titanic_classifier.blend_logistic_regression()
-    titanic_classifier.stacking()
-    titanic_classifier.flush_result('output_stacking.csv', 'data/test.csv')
+    titanic_classifier.voting()
+    titanic_classifier.flush_result('voting.csv', 'data/test.csv')
 
     # titanic_classifier.feature_selection()
     # titanic_classifier.learn_predict_flush('output.csv', 'data/test.csv', weights=[2, 1, 1])

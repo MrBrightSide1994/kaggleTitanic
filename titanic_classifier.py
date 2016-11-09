@@ -1,6 +1,6 @@
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV, learning_curve, ShuffleSplit, \
     StratifiedKFold
-from sklearn.ensemble import VotingClassifier
+from sklearn.ensemble import VotingClassifier, BaggingClassifier
 from sklearn.feature_selection import RFE
 from sklearn.neural_network import MLPClassifier
 
@@ -192,7 +192,7 @@ class SurvivalClassifier:
             data_set_stack_train[:, index] = model.predict_proba(x_train_b)[:, 1]
             data_set_stack_test[:, index] = model.predict_proba(input_test_x)[:, 1]
 
-        blender  = MLPClassifier(hidden_layer_sizes=300)
+        blender = MLPClassifier(hidden_layer_sizes=300)
         blender.fit(data_set_stack_train, y_train_b)
 
         self.result = blender.predict(data_set_stack_test)
@@ -204,13 +204,11 @@ class SurvivalClassifier:
             Survived=self.result)
         ensemble.to_csv(output_file_name, index=False)
 
-    def learn_predict_flush(self, output_file_name, test_file_name, voting='hard', weights=None):
+    def voting(self, voting='hard', weights=None):
         voting_classifier = self.get_classifier(voting=voting, weights=weights)
         voting_classifier = voting_classifier.fit(self.train_x, self.train_y)
 
-        ensemble = pd.read_csv(test_file_name)[['PassengerId']].assign(
-            Survived=voting_classifier.predict(self.test_x))
-        ensemble.to_csv(output_file_name, index=False)
+        self.result = voting_classifier.predict(self.test_x)
 
         return None
 
